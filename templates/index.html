@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OMR Evaluator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        select, input[type="file"], button {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #result {
+            margin-top: 20px;
+            background: #f7f7f7;
+            padding: 15px;
+            border-radius: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .correct { color: green; font-weight: bold; }
+        .wrong { color: red; font-weight: bold; }
+
+        ul { padding-left: 20px; }
+        li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>OMR Evaluator</h2>
+        <form id="omrForm">
+            <label for="setChoice">Select Paper Set:</label>
+            <select name="set_choice" id="setChoice" required>
+                <option value="A">Paper A</option>
+                <option value="B">Paper B</option>
+            </select>
+
+            <label for="file">Upload OMR Sheet:</label>
+            <input type="file" id="file" name="file" accept="image/*" required>
+
+            <button type="submit">Evaluate</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('omrForm');
+        const resultDiv = document.getElementById('result');
+
+        form.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const fileInput = document.getElementById('file');
+            const setChoice = document.getElementById('setChoice').value;
+            if(fileInput.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('set_choice', setChoice);
+
+            const response = await fetch('/upload', { method: 'POST', body: formData });
+            const result = await response.json();
+
+            let html = '';
+            if(result.error){
+                html = `<p style="color:red">${result.error}</p>`;
+            } else {
+                html += `<h3>Score: ${result.score} / 100</h3>`;
+                html += '<ul>';
+                result.details.forEach(item => {
+                    html += `<li>Q${item.question}: Chosen ${item.chosen} - ${item.correct ? '<span class="correct">Correct</span>' : '<span class="wrong">Wrong</span>'}</li>`;
+                });
+                html += '</ul>';
+            }
+            resultDiv.innerHTML = html;
+        });
+    </script>
+</body>
+</html>
